@@ -57,7 +57,7 @@ journalctl -u hugobox-gamepad -f
 
 ## Technical Details
 
-- .NET 10 SDK for running the gamepad daemon
+- .NET 10 SDK with native C# scripting (single-file scripts with `#:package` support)
 - Chromium browser in kiosk mode
 - Systemd services for process management
 - Wayland display server support

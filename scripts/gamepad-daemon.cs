@@ -1,4 +1,6 @@
 #!/usr/bin/env -S dotnet run
+#:package Gamepad@1.1.0
+
 using System.Diagnostics;
 using Gamepad; // from nahueltaibo/gamepad
 

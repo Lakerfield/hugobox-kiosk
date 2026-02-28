@@ -47,15 +47,15 @@ Services auto-start on boot
 - Idempotent installation script (safe to re-run for upgrades)
 - Installs .NET 10 SDK via Microsoft's official dotnet-install.sh
 - Downloads files from kiosk.hugobox.nl
-- Restores NuGet packages with `dotnet restore`
+- Makes scripts executable
 - Configures systemd services
 - Uses `/opt/hugobox` for binaries, `/etc/hugobox` for config
 
 **scripts/gamepad-daemon.cs**
-- Single C# script file with shebang (`#!/usr/bin/env -S dotnet run`)
-- Uses native .NET 10 scripting (no dotnet-script tool needed)
-- Companion gamepad-daemon.csproj for NuGet package dependencies
-- Reads gamepad input via nahueltaibo/gamepad NuGet package (v1.1.0)
+- Single self-contained C# script file with shebang (`#!/usr/bin/env -S dotnet run`)
+- Uses native .NET 10 scripting with `#:package` directive for dependencies
+- NuGet package declared inline: `#:package Gamepad@1.1.0`
+- No separate .csproj needed - everything in one file
 - Button combos (Start+Select+A/B/X) trigger systemctl commands
 - Runs as root to execute system commands
 - Environment variables: `GP_DEVICE`, `CHROMIUM_UNIT`, `COMBO_HOLD_MS`
@@ -114,6 +114,7 @@ sudo -u pi scripts/kiosk-start.sh
 # After modifying gamepad-daemon.cs, just run it:
 cd scripts
 dotnet run gamepad-daemon.cs
+# Packages auto-download on first run
 ```
 
 ### Deployment
@@ -147,12 +148,9 @@ Key variables:
 ```
 /opt/hugobox/              - Installation directory
   scripts/
-    gamepad-daemon.cs      - Executable C# script with shebang
-    gamepad-daemon.csproj  - Project file for NuGet dependencies
+    gamepad-daemon.cs      - Self-contained C# script with shebang & #:package
     gamepad-daemon.sh      - Service wrapper
     kiosk-start.sh         - Kiosk launcher
-    bin/                   - .NET build cache (auto-generated)
-    obj/                   - .NET build cache (auto-generated)
   systemd/                 - Service unit templates
   hugobox.env.example      - Config template
 
@@ -162,6 +160,8 @@ Key variables:
 /etc/systemd/system/
   hugobox-kiosk.service    - Chromium kiosk service
   hugobox-gamepad.service  - Gamepad daemon service
+
+~/.dotnet/                 - .NET SDK and package cache (auto-managed)
 ```
 
 ## Important Notes
@@ -178,12 +178,13 @@ Different controllers may use different button numbers. Test with actual hardwar
 
 ### .NET 10 Native Scripting
 The gamepad daemon uses .NET 10's native scripting capabilities:
-- Single gamepad-daemon.cs file with shebang: `#!/usr/bin/env -S dotnet run`
-- Companion gamepad-daemon.csproj in same directory for PackageReference
+- Single self-contained gamepad-daemon.cs file with shebang: `#!/usr/bin/env -S dotnet run`
+- NuGet packages declared inline with `#:package Gamepad@1.1.0` directive
+- No separate .csproj needed - everything in one file
 - Top-level statements (no Main method or class needed)
 - Can be run with `dotnet run gamepad-daemon.cs` or `./gamepad-daemon.cs`
-- No need for dotnet-script tool - pure .NET 10 SDK
-- NuGet packages restored during installation with `dotnet restore`
+- Pure .NET 10 SDK - no additional tools required
+- Packages are auto-downloaded on first run (cached thereafter)
 
 ### Wayland-Specific Behavior
 - Chromium requires `--enable-features=UseOzonePlatform --ozone-platform=wayland`

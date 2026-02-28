@@ -119,7 +119,6 @@ download_files() {
   log "Downloading project files from ${REPO_URL}"
 
   # Download gamepad daemon
-  curl -fsSL "${REPO_URL}/scripts/gamepad-daemon.csproj" -o "${INSTALL_DIR}/scripts/gamepad-daemon.csproj"
   curl -fsSL "${REPO_URL}/scripts/gamepad-daemon.cs" -o "${INSTALL_DIR}/scripts/gamepad-daemon.cs"
 
   # Download scripts
@@ -137,12 +136,7 @@ download_files() {
   chmod +x "${INSTALL_DIR}/scripts/"*.sh
   chmod +x "${INSTALL_DIR}/scripts/gamepad-daemon.cs"
 
-  # Restore NuGet packages for gamepad daemon
-  log "Restoring .NET packages"
-  cd "${INSTALL_DIR}/scripts"
-  dotnet restore
-
-  log "✅ Files downloaded and packages restored"
+  log "✅ Files downloaded"
 }
 
 install_config() {
