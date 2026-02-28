@@ -53,7 +53,7 @@ gamepad.ButtonChanged += (_, e) =>
     {
         lastActionAt = DateTimeOffset.UtcNow;
         Console.WriteLine("[gp] combo: Start+Select+B => shutdown");
-        Run("shutdown", "-h now");
+        Run("systemctl", "poweroff");
         return;
     }
 

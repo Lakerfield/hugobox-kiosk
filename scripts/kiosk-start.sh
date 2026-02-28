@@ -27,6 +27,11 @@ if [[ ! -e "${XDG_RUNTIME_DIR}/${WAYLAND_DISPLAY}" ]]; then
   exit 1
 fi
 
+# Kill any existing chromium processes to prevent tab-opening loop
+echo "Checking for existing Chromium processes..."
+pkill -u "$(whoami)" chromium-browser 2>/dev/null || pkill -u "$(whoami)" chromium 2>/dev/null || true
+sleep 1
+
 echo "Starting Chromium in kiosk mode on ${HUGOBOX_URL}"
 echo "Flags: ${HUGOBOX_CHROMIUM_FLAGS}"
 
@@ -47,11 +52,17 @@ WAYLAND_FLAGS="--enable-features=UseOzonePlatform --ozone-platform=wayland"
 # Remove --disable-gpu if you have proper GPU support
 EXTRA_FLAGS="--disable-gpu --no-sandbox --disable-dev-shm-usage"
 
+# Use isolated user data directory to prevent conflicts with desktop chromium
+USER_DATA_DIR="/var/lib/hugobox/chromium-profile"
+mkdir -p "$USER_DATA_DIR"
+chown "$(whoami):$(whoami)" "$USER_DATA_DIR" 2>/dev/null || true
+
 # Start chromium
 exec $CHROMIUM_BIN \
   $HUGOBOX_CHROMIUM_FLAGS \
   $WAYLAND_FLAGS \
   $EXTRA_FLAGS \
+  --user-data-dir="$USER_DATA_DIR" \
   --disable-session-crashed-bubble \
   --disable-restore-session-state \
   --no-first-run \

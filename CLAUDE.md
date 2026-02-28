@@ -164,6 +164,18 @@ Key variables:
 ~/.dotnet/                 - .NET SDK and package cache (auto-managed)
 ```
 
+## Bug Fixes and Workarounds
+
+### Chromium Instance Conflicts
+The kiosk service kills any existing chromium processes on startup to prevent:
+- Tab-opening loops when desktop chromium is running
+- Profile lock conflicts
+
+It also uses an isolated user data directory (`/var/lib/hugobox/chromium-profile`) to ensure the kiosk instance doesn't conflict with any user's desktop chromium session.
+
+### Shutdown Command
+Uses `systemctl poweroff` instead of `shutdown -h now` for more reliable shutdown behavior on systemd-based systems.
+
 ## Important Notes
 
 ### Gamepad Button Mappings

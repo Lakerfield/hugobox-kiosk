@@ -111,8 +111,12 @@ install_deps() {
 
 ensure_dirs() {
   log "Creating directories"
-  mkdir -p "$INSTALL_DIR" "$ETC_DIR" "${INSTALL_DIR}/scripts" "${INSTALL_DIR}/systemd"
-  chmod 0755 "$INSTALL_DIR" "$ETC_DIR"
+  mkdir -p "$INSTALL_DIR" "$ETC_DIR" "$LIB_DIR" "${INSTALL_DIR}/scripts" "${INSTALL_DIR}/systemd"
+  chmod 0755 "$INSTALL_DIR" "$ETC_DIR" "$LIB_DIR"
+
+  # Create chromium profile directory owned by the kiosk user (pi)
+  mkdir -p "$LIB_DIR/chromium-profile"
+  chown pi:pi "$LIB_DIR/chromium-profile" 2>/dev/null || true
 }
 
 download_files() {
