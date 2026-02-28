@@ -187,13 +187,13 @@ jobs:
                   <div class="install-section">
                       <h2>Management Commands</h2>
                       <pre><code># View status
-./install.sh status
-
-# Upgrade
-sudo ./install.sh upgrade
-
-# View logs
-journalctl -u hugobox-kiosk -f</code></pre>
+          ./install.sh status
+          
+          # Upgrade
+          sudo ./install.sh upgrade
+          
+          # View logs
+          journalctl -u hugobox-kiosk -f</code></pre>
                   </div>
 
                   <div style="text-align: center; margin-top: 30px;">
