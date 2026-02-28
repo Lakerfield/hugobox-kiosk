@@ -38,13 +38,24 @@ gamepad.ButtonChanged += (_, e) =>
     if ((DateTimeOffset.UtcNow - lastActionAt).TotalMilliseconds < comboHoldMs) return;
 
     // Acties:
-    // - Start+Select+A = (her)start chromium
-    // - Start+Select+X = shutdown os
-    // - Start+Select+B = close chromium, go to desktop (stop kiosk service)
+    // - Start+Select+A = start kiosk met hugobox.nl
+    // - Start+Select+B = start kiosk met dev.hugobox.nl
+    // - Start+Select+X = shutdown
+    // - Start+Select+Y = stop kiosk (terug naar desktop)
     if (pressed.Contains(0))
     {
         lastActionAt = DateTimeOffset.UtcNow;
-        Console.WriteLine("[gp] combo: Start+Select+A => restart chromium");
+        Console.WriteLine("[gp] combo: Start+Select+A => start kiosk (hugobox.nl)");
+        SetKioskUrl("https://hugobox.nl");
+        Run("systemctl", $"restart {chromiumUnit}");
+        return;
+    }
+
+    if (pressed.Contains(1))
+    {
+        lastActionAt = DateTimeOffset.UtcNow;
+        Console.WriteLine("[gp] combo: Start+Select+B => start kiosk (dev.hugobox.nl)");
+        SetKioskUrl("https://dev.hugobox.nl");
         Run("systemctl", $"restart {chromiumUnit}");
         return;
     }
@@ -52,15 +63,15 @@ gamepad.ButtonChanged += (_, e) =>
     if (pressed.Contains(2))
     {
         lastActionAt = DateTimeOffset.UtcNow;
-        Console.WriteLine("[gp] combo: Start+Select+B => shutdown");
+        Console.WriteLine("[gp] combo: Start+Select+X => shutdown");
         Run("systemctl", "poweroff");
         return;
     }
 
-    if (pressed.Contains(1))
+    if (pressed.Contains(3))
     {
         lastActionAt = DateTimeOffset.UtcNow;
-        Console.WriteLine("[gp] combo: Start+Select+X => stop chromium (desktop)");
+        Console.WriteLine("[gp] combo: Start+Select+Y => stop kiosk (desktop)");
         Run("systemctl", $"stop {chromiumUnit}");
         return;
     }
@@ -82,6 +93,42 @@ bool IsComboBasePressed()
     // Let op: button-namen kunnen per controller verschillen.
     // Op veel pads is "Select" = Back, "Start" = Start.
     return pressed.Contains(6) && pressed.Contains(7);
+}
+
+static void SetKioskUrl(string url)
+{
+    try
+    {
+        const string configFile = "/etc/hugobox/config.env";
+        if (!File.Exists(configFile))
+        {
+            Console.WriteLine($"[warn] Config file not found: {configFile}");
+            return;
+        }
+
+        var lines = File.ReadAllLines(configFile);
+        var updated = false;
+
+        for (int i = 0; i < lines.Length; i++)
+        {
+            if (lines[i].StartsWith("HUGOBOX_URL="))
+            {
+                lines[i] = $"HUGOBOX_URL=\"{url}\"";
+                updated = true;
+                break;
+            }
+        }
+
+        if (updated)
+        {
+            File.WriteAllLines(configFile, lines);
+            Console.WriteLine($"[config] Updated HUGOBOX_URL to {url}");
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[err] Failed to update config: {ex.Message}");
+    }
 }
 
 static int Run(string file, string args)

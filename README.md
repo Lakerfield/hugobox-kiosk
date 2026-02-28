@@ -19,9 +19,10 @@ curl -fsSL https://kiosk.hugobox.nl/install.sh | sudo bash
 
 ## Gamepad Controls
 
-- **Start + Select + A** - Restart Chromium
-- **Start + Select + B** - Shutdown system
-- **Start + Select + X** - Stop kiosk (exit to desktop)
+- **Start + Select + A** - Start kiosk (hugobox.nl)
+- **Start + Select + B** - Start kiosk (dev.hugobox.nl)
+- **Start + Select + X** - Shutdown system
+- **Start + Select + Y** - Exit to desktop
 
 ## Configuration
 

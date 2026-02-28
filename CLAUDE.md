@@ -180,11 +180,14 @@ Uses `systemctl poweroff` instead of `shutdown -h now` for more reliable shutdow
 
 ### Gamepad Button Mappings
 Button numbers are controller-specific. Current mappings (Xbox-style controller):
-- Button 0 = A
-- Button 1 = X
-- Button 2 = B
-- Button 6 = Select/Back
-- Button 7 = Start
+- Button 0 = A → Start kiosk (hugobox.nl)
+- Button 1 = B → Start kiosk (dev.hugobox.nl)
+- Button 2 = X → Shutdown system
+- Button 3 = Y → Exit to desktop
+- Button 6 = Select/Back (combo trigger)
+- Button 7 = Start (combo trigger)
+
+All actions require holding Start + Select simultaneously. The daemon updates `/etc/hugobox/config.env` to switch between production and dev URLs.
 
 Different controllers may use different button numbers. Test with actual hardware.
 

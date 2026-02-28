@@ -178,9 +178,10 @@ jobs:
                   <div class="install-section">
                       <h2>Gamepad Controls</h2>
                       <ul style="list-style: none; padding: 0;">
-                          <li>🔄 <strong>Start + Select + A</strong> - Restart Chromium</li>
-                          <li>🔌 <strong>Start + Select + B</strong> - Shutdown system</li>
-                          <li>🚪 <strong>Start + Select + X</strong> - Exit to desktop</li>
+                          <li>🌐 <strong>Start + Select + A</strong> - Start kiosk (hugobox.nl)</li>
+                          <li>🔧 <strong>Start + Select + B</strong> - Start kiosk (dev.hugobox.nl)</li>
+                          <li>🔌 <strong>Start + Select + X</strong> - Shutdown system</li>
+                          <li>🚪 <strong>Start + Select + Y</strong> - Exit to desktop</li>
                       </ul>
                   </div>
 
