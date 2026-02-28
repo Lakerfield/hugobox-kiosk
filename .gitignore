@@ -11,6 +11,13 @@
 *.sln.docstates
 *.env
 
+# GitHub Pages build directory
+_site/
+
+# .NET build outputs in scripts
+scripts/bin/
+scripts/obj/
+
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 

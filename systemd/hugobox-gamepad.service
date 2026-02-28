@@ -1,0 +1,18 @@
+[Unit]
+Description=HugoBox Gamepad Daemon
+After=multi-user.target
+Before=hugobox-kiosk.service
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/hugobox/config.env
+Environment=PATH=/usr/local/bin:/usr/bin:/bin:/root/.dotnet/tools
+ExecStart=/opt/hugobox/scripts/gamepad-daemon.sh
+Restart=always
+RestartSec=3
+User=root
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,220 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Prepare deployment files
+        run: |
+          mkdir -p _site
+
+          # Copy all files needed for installation
+          cp install.sh _site/
+          cp hugobox.env.example _site/
+          cp -r scripts _site/
+          cp -r systemd _site/
+          cp README.md _site/
+          cp LICENSE _site/
+          cp CLAUDE.md _site/
+
+          # Create CNAME file for custom domain
+          echo "kiosk.hugobox.nl" > _site/CNAME
+
+          # Create index.html for the landing page
+          cat > _site/index.html <<'EOF'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>HugoBox Kiosk - Installation</title>
+              <style>
+                  * { margin: 0; padding: 0; box-sizing: border-box; }
+                  body {
+                      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                      color: #fff;
+                      min-height: 100vh;
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                      padding: 20px;
+                  }
+                  .container {
+                      max-width: 800px;
+                      background: rgba(255, 255, 255, 0.1);
+                      backdrop-filter: blur(10px);
+                      border-radius: 20px;
+                      padding: 40px;
+                      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+                  }
+                  h1 {
+                      font-size: 2.5em;
+                      margin-bottom: 10px;
+                      text-align: center;
+                  }
+                  .subtitle {
+                      text-align: center;
+                      opacity: 0.9;
+                      margin-bottom: 30px;
+                  }
+                  .install-section {
+                      background: rgba(0, 0, 0, 0.2);
+                      border-radius: 10px;
+                      padding: 20px;
+                      margin: 20px 0;
+                  }
+                  pre {
+                      background: rgba(0, 0, 0, 0.4);
+                      padding: 15px;
+                      border-radius: 8px;
+                      overflow-x: auto;
+                      font-size: 14px;
+                      margin: 10px 0;
+                  }
+                  code {
+                      color: #ffd700;
+                      font-family: "Courier New", monospace;
+                  }
+                  .features {
+                      display: grid;
+                      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                      gap: 15px;
+                      margin: 20px 0;
+                  }
+                  .feature {
+                      background: rgba(255, 255, 255, 0.1);
+                      padding: 15px;
+                      border-radius: 8px;
+                      text-align: center;
+                  }
+                  .feature-icon {
+                      font-size: 2em;
+                      margin-bottom: 10px;
+                  }
+                  a {
+                      color: #ffd700;
+                      text-decoration: none;
+                  }
+                  a:hover {
+                      text-decoration: underline;
+                  }
+                  .button {
+                      display: inline-block;
+                      background: rgba(255, 215, 0, 0.2);
+                      color: #ffd700;
+                      padding: 12px 24px;
+                      border-radius: 8px;
+                      margin: 10px 5px;
+                      border: 2px solid #ffd700;
+                      transition: all 0.3s;
+                  }
+                  .button:hover {
+                      background: #ffd700;
+                      color: #667eea;
+                      text-decoration: none;
+                  }
+              </style>
+          </head>
+          <body>
+              <div class="container">
+                  <h1>🎮 HugoBox Kiosk</h1>
+                  <p class="subtitle">Raspberry Pi Kiosk with Gamepad Control</p>
+
+                  <div class="install-section">
+                      <h2>Quick Install</h2>
+                      <p>Run this command on your Raspberry Pi 4:</p>
+                      <pre><code>curl -fsSL https://kiosk.hugobox.nl/install.sh | sudo bash</code></pre>
+                  </div>
+
+                  <div class="features">
+                      <div class="feature">
+                          <div class="feature-icon">🖥️</div>
+                          <strong>Chromium Kiosk</strong>
+                          <p>Full-screen browser on Wayland</p>
+                      </div>
+                      <div class="feature">
+                          <div class="feature-icon">🎮</div>
+                          <strong>Gamepad Control</strong>
+                          <p>.NET 10 powered daemon</p>
+                      </div>
+                      <div class="feature">
+                          <div class="feature-icon">🚀</div>
+                          <strong>Auto-start</strong>
+                          <p>Systemd services</p>
+                      </div>
+                      <div class="feature">
+                          <div class="feature-icon">🔄</div>
+                          <strong>Idempotent</strong>
+                          <p>Safe to re-run</p>
+                      </div>
+                  </div>
+
+                  <div class="install-section">
+                      <h2>Gamepad Controls</h2>
+                      <ul style="list-style: none; padding: 0;">
+                          <li>🔄 <strong>Start + Select + A</strong> - Restart Chromium</li>
+                          <li>🔌 <strong>Start + Select + B</strong> - Shutdown system</li>
+                          <li>🚪 <strong>Start + Select + X</strong> - Exit to desktop</li>
+                      </ul>
+                  </div>
+
+                  <div class="install-section">
+                      <h2>Management Commands</h2>
+                      <pre><code># View status
+./install.sh status
+
+# Upgrade
+sudo ./install.sh upgrade
+
+# View logs
+journalctl -u hugobox-kiosk -f</code></pre>
+                  </div>
+
+                  <div style="text-align: center; margin-top: 30px;">
+                      <a href="https://github.com/Lakerfield/hugobox-kiosk" class="button">📦 View on GitHub</a>
+                      <a href="README.md" class="button">📖 Documentation</a>
+                  </div>
+              </div>
+          </body>
+          </html>
+          EOF
+
+          # Make install.sh executable
+          chmod +x _site/install.sh
+          chmod +x _site/scripts/*.sh
+
+          echo "✅ Files prepared for deployment"
+          ls -lah _site/
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
