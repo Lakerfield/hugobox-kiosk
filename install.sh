@@ -4,6 +4,7 @@ set -euo pipefail
 PROJECT="hugobox"
 INSTALL_DIR="/opt/${PROJECT}"
 ETC_DIR="/etc/${PROJECT}"
+LIB_DIR="/var/lib/${PROJECT}"
 SYSTEMD_DIR="/etc/systemd/system"
 
 REPO_URL="https://kiosk.hugobox.nl"
