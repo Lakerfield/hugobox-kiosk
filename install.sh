@@ -137,7 +137,11 @@ download_files() {
   # Download config example
   curl -fsSL "${REPO_URL}/hugobox.env.example" -o "${INSTALL_DIR}/hugobox.env.example"
 
+  # Download install.sh itself so it can be re-run for status/upgrade
+  curl -fsSL "${REPO_URL}/install.sh" -o "${INSTALL_DIR}/install.sh"
+
   # Make scripts executable
+  chmod +x "${INSTALL_DIR}/install.sh"
   chmod +x "${INSTALL_DIR}/scripts/"*.sh
   chmod +x "${INSTALL_DIR}/scripts/gamepad-daemon.cs"
 
@@ -235,10 +239,11 @@ do_install_or_upgrade() {
 
   log "✅ Installation complete!"
   log ""
-  log "Config: sudo nano ${ETC_DIR}/config.env"
-  log "Logs:   journalctl -u ${PROJECT}-kiosk -f"
-  log "        journalctl -u ${PROJECT}-gamepad -f"
-  log "Status: $0 status"
+  log "Config:   sudo nano ${ETC_DIR}/config.env"
+  log "Logs:     journalctl -u ${PROJECT}-kiosk -f"
+  log "          journalctl -u ${PROJECT}-gamepad -f"
+  log "Status:   ${INSTALL_DIR}/install.sh status"
+  log "Upgrade:  sudo ${INSTALL_DIR}/install.sh upgrade"
 }
 
 do_uninstall() {

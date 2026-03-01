@@ -187,11 +187,11 @@ jobs:
 
                   <div class="install-section">
                       <h2>Management Commands</h2>
-                      <pre><code># View status
-          ./install.sh status
+                      <pre><code># View status (uses installed copy)
+          /opt/hugobox/install.sh status
           
-          # Upgrade
-          sudo ./install.sh upgrade
+          # Upgrade (also updates install.sh itself)
+          sudo /opt/hugobox/install.sh upgrade
           
           # View logs
           journalctl -u hugobox-kiosk -f</code></pre>
