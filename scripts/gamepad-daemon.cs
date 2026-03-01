@@ -5,9 +5,6 @@ using System.Diagnostics;
 using Gamepad; // from nahueltaibo/gamepad
 
 // -------- Config --------
-// Welke joystick device? (default: /dev/input/js0)
-var devicePath = Environment.GetEnvironmentVariable("GP_DEVICE") ?? "/dev/input/js0";
-
 // Welke systemd unit beheert jouw kiosk chromium? (pas aan!)
 var chromiumUnit = Environment.GetEnvironmentVariable("CHROMIUM_UNIT") ?? "chromium-kiosk.service";
 
@@ -16,23 +13,20 @@ var comboHoldMs = int.TryParse(Environment.GetEnvironmentVariable("COMBO_HOLD_MS
 
 // ------------------------
 
-Console.WriteLine($"[gp] starting, device={devicePath}, chromiumUnit={chromiumUnit}");
+Console.WriteLine($"[gp] starting, device=/dev/input/js*, chromiumUnit={chromiumUnit}");
 
-using var gamepad = new GamepadController(devicePath);
-
-// We onthouden welke knoppen nu ingedrukt zijn
-var pressed = new HashSet<byte>();
+// Per-controller state: elk apparaat heeft zijn eigen "welke knoppen zijn ingedrukt"
+var controllers = new Dictionary<string, GamepadController>();
+var pressedSets = new Dictionary<string, HashSet<byte>>();
+object lockObj = new();
 var lastActionAt = DateTimeOffset.MinValue;
 
-gamepad.ButtonChanged += (_, e) =>
+void HandleCombo(HashSet<byte> pressed)
 {
-    //Console.WriteLine($"Button {e.Button} pressed={e.Pressed}");
-
-    if (e.Pressed) pressed.Add(e.Button);
-    else pressed.Remove(e.Button);
-
-    // Basis combo: Start + Select ingedrukt houden
-    if (!IsComboBasePressed()) return;
+    // Basis combo: Start (7) + Select (6) ingedrukt houden
+    // Let op: button-namen kunnen per controller verschillen.
+    // Op veel pads is "Select" = Back, "Start" = Start.
+    if (!pressed.Contains(6) || !pressed.Contains(7)) return;
 
     // simpele debounce: niet 10x dezelfde actie
     if ((DateTimeOffset.UtcNow - lastActionAt).TotalMilliseconds < comboHoldMs) return;
@@ -48,34 +42,95 @@ gamepad.ButtonChanged += (_, e) =>
         Console.WriteLine("[gp] combo: Start+Select+A => start kiosk (hugobox.nl)");
         SetKioskUrl("https://hugobox.nl");
         Run("systemctl", $"restart {chromiumUnit}");
-        return;
     }
-
-    if (pressed.Contains(1))
+    else if (pressed.Contains(1))
     {
         lastActionAt = DateTimeOffset.UtcNow;
         Console.WriteLine("[gp] combo: Start+Select+B => start kiosk (dev.hugobox.nl)");
         SetKioskUrl("https://dev.hugobox.nl");
         Run("systemctl", $"restart {chromiumUnit}");
-        return;
     }
-
-    if (pressed.Contains(2))
+    else if (pressed.Contains(2))
     {
         lastActionAt = DateTimeOffset.UtcNow;
         Console.WriteLine("[gp] combo: Start+Select+X => shutdown");
         Run("systemctl", "poweroff");
-        return;
     }
-
-    if (pressed.Contains(3))
+    else if (pressed.Contains(3))
     {
         lastActionAt = DateTimeOffset.UtcNow;
         Console.WriteLine("[gp] combo: Start+Select+Y => stop kiosk (desktop)");
         Run("systemctl", $"stop {chromiumUnit}");
-        return;
     }
+}
+
+void AddController(string path)
+{
+    lock (lockObj)
+    {
+        if (controllers.ContainsKey(path)) return;
+        try
+        {
+            var pressed = new HashSet<byte>();
+            var gc = new GamepadController(path);
+            gc.ButtonChanged += (_, e) =>
+            {
+                //Console.WriteLine($"[{path}] Button {e.Button} pressed={e.Pressed}");
+                if (e.Pressed) pressed.Add(e.Button);
+                else pressed.Remove(e.Button);
+                HandleCombo(pressed);
+            };
+            controllers[path] = gc;
+            pressedSets[path] = pressed;
+            Console.WriteLine($"[gp] connected: {path}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[gp] failed to open {path}: {ex.Message}");
+        }
+    }
+}
+
+void RemoveController(string path)
+{
+    lock (lockObj)
+    {
+        if (controllers.TryGetValue(path, out var gc))
+        {
+            try { gc.Dispose(); } catch { }
+            controllers.Remove(path);
+            pressedSets.Remove(path);
+            Console.WriteLine($"[gp] disconnected: {path}");
+        }
+    }
+}
+
+Console.WriteLine("[gp] multi-device mode: watching /dev/input/js*");
+
+// Voeg bestaande apparaten toe
+try
+{
+    foreach (var path in Directory.GetFiles("/dev/input", "js*").OrderBy(p => p))
+        AddController(path);
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"[gp] warning: could not enumerate /dev/input: {ex.Message}");
+}
+
+// Bewaak nieuwe en verwijderde apparaten (bijv. bij Bluetooth reconnect)
+var watcher = new FileSystemWatcher("/dev/input", "js*")
+{
+    EnableRaisingEvents = true
 };
+watcher.Created += (_, e) =>
+{
+    Console.WriteLine($"[gp] new device detected: {e.FullPath}");
+    // Korte vertraging zodat het apparaatbestand volledig klaar is voordat we het openen
+    Thread.Sleep(500);
+    AddController(e.FullPath);
+};
+watcher.Deleted += (_, e) => RemoveController(e.FullPath);
 
 Console.WriteLine("[gp] listening... (Ctrl+C to stop)");
 var stop = new ManualResetEventSlim(false);
@@ -87,13 +142,7 @@ Console.CancelKeyPress += (_, e) =>
 };
 
 stop.Wait();
-
-bool IsComboBasePressed()
-{
-    // Let op: button-namen kunnen per controller verschillen.
-    // Op veel pads is "Select" = Back, "Start" = Start.
-    return pressed.Contains(6) && pressed.Contains(7);
-}
+watcher.Dispose();
 
 static void SetKioskUrl(string url)
 {

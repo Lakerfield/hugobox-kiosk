@@ -7,7 +7,6 @@ if [[ -f /etc/hugobox/config.env ]]; then
 fi
 
 # Set environment variables for the C# script
-export GP_DEVICE="${GP_DEVICE:-/dev/input/js0}"
 export CHROMIUM_UNIT="${CHROMIUM_UNIT:-hugobox-kiosk.service}"
 export COMBO_HOLD_MS="${COMBO_HOLD_MS:-250}"
 
