@@ -5,9 +5,6 @@ using System.Diagnostics;
 using Gamepad; // from nahueltaibo/gamepad
 
 // -------- Config --------
-// Specifiek device? (default: luister naar alle /dev/input/js*)
-var singleDevice = Environment.GetEnvironmentVariable("GP_DEVICE");
-
 // Welke systemd unit beheert jouw kiosk chromium? (pas aan!)
 var chromiumUnit = Environment.GetEnvironmentVariable("CHROMIUM_UNIT") ?? "chromium-kiosk.service";
 
@@ -16,7 +13,7 @@ var comboHoldMs = int.TryParse(Environment.GetEnvironmentVariable("COMBO_HOLD_MS
 
 // ------------------------
 
-Console.WriteLine($"[gp] starting, device={singleDevice ?? "/dev/input/js*"}, chromiumUnit={chromiumUnit}");
+Console.WriteLine($"[gp] starting, device=/dev/input/js*, chromiumUnit={chromiumUnit}");
 
 // Per-controller state: elk apparaat heeft zijn eigen "welke knoppen zijn ingedrukt"
 var controllers = new Dictionary<string, GamepadController>();
@@ -108,44 +105,32 @@ void RemoveController(string path)
     }
 }
 
-FileSystemWatcher? watcher = null;
+Console.WriteLine("[gp] multi-device mode: watching /dev/input/js*");
 
-if (singleDevice != null)
+// Voeg bestaande apparaten toe
+try
 {
-    // Achterwaartse compatibiliteit: enkel opgegeven device
-    Console.WriteLine($"[gp] single-device mode: {singleDevice}");
-    AddController(singleDevice);
+    foreach (var path in Directory.GetFiles("/dev/input", "js*").OrderBy(p => p))
+        AddController(path);
 }
-else
+catch (Exception ex)
 {
-    // Multi-device mode: luister naar alle huidige én toekomstige js* apparaten
-    Console.WriteLine("[gp] multi-device mode: watching /dev/input/js*");
-
-    // Voeg bestaande apparaten toe
-    try
-    {
-        foreach (var path in Directory.GetFiles("/dev/input", "js*").OrderBy(p => p))
-            AddController(path);
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"[gp] warning: could not enumerate /dev/input: {ex.Message}");
-    }
-
-    // Bewaak nieuwe en verwijderde apparaten (bijv. bij Bluetooth reconnect)
-    watcher = new FileSystemWatcher("/dev/input", "js*")
-    {
-        EnableRaisingEvents = true
-    };
-    watcher.Created += (_, e) =>
-    {
-        Console.WriteLine($"[gp] new device detected: {e.FullPath}");
-        // Korte vertraging zodat het apparaatbestand volledig klaar is voordat we het openen
-        Thread.Sleep(500);
-        AddController(e.FullPath);
-    };
-    watcher.Deleted += (_, e) => RemoveController(e.FullPath);
+    Console.WriteLine($"[gp] warning: could not enumerate /dev/input: {ex.Message}");
 }
+
+// Bewaak nieuwe en verwijderde apparaten (bijv. bij Bluetooth reconnect)
+var watcher = new FileSystemWatcher("/dev/input", "js*")
+{
+    EnableRaisingEvents = true
+};
+watcher.Created += (_, e) =>
+{
+    Console.WriteLine($"[gp] new device detected: {e.FullPath}");
+    // Korte vertraging zodat het apparaatbestand volledig klaar is voordat we het openen
+    Thread.Sleep(500);
+    AddController(e.FullPath);
+};
+watcher.Deleted += (_, e) => RemoveController(e.FullPath);
 
 Console.WriteLine("[gp] listening... (Ctrl+C to stop)");
 var stop = new ManualResetEventSlim(false);
@@ -157,7 +142,7 @@ Console.CancelKeyPress += (_, e) =>
 };
 
 stop.Wait();
-watcher?.Dispose();
+watcher.Dispose();
 
 static void SetKioskUrl(string url)
 {

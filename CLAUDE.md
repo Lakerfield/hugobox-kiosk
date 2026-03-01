@@ -58,7 +58,7 @@ Services auto-start on boot
 - No separate .csproj needed - everything in one file
 - Button combos (Start+Select+A/B/X) trigger systemctl commands
 - Runs as root to execute system commands
-- Environment variables: `GP_DEVICE`, `CHROMIUM_UNIT`, `COMBO_HOLD_MS`
+- Environment variables: `CHROMIUM_UNIT`, `COMBO_HOLD_MS`
 - Can be run directly: `dotnet run gamepad-daemon.cs` or `./gamepad-daemon.cs`
 
 **scripts/kiosk-start.sh**
@@ -140,7 +140,6 @@ See `.github/DEPLOYMENT.md` for full deployment documentation.
 Key variables:
 - `HUGOBOX_URL` - Target URL for kiosk browser
 - `HUGOBOX_CHROMIUM_FLAGS` - Browser launch flags
-- `GP_DEVICE` - Gamepad input device path
 - `CHROMIUM_UNIT` - Systemd unit name for gamepad to control
 
 ## File Locations (on deployed system)
