@@ -40,6 +40,7 @@ void HandleCombo(HashSet<byte> pressed)
     {
         lastActionAt = DateTimeOffset.UtcNow;
         Console.WriteLine("[gp] combo: Start+Select+A => start kiosk (hugobox.nl)");
+        PlayBeep();
         SetKioskUrl("https://hugobox.nl");
         Run("systemctl", $"restart {chromiumUnit}");
     }
@@ -47,6 +48,7 @@ void HandleCombo(HashSet<byte> pressed)
     {
         lastActionAt = DateTimeOffset.UtcNow;
         Console.WriteLine("[gp] combo: Start+Select+B => start kiosk (dev.hugobox.nl)");
+        PlayBeep();
         SetKioskUrl("https://dev.hugobox.nl");
         Run("systemctl", $"restart {chromiumUnit}");
     }
@@ -54,12 +56,14 @@ void HandleCombo(HashSet<byte> pressed)
     {
         lastActionAt = DateTimeOffset.UtcNow;
         Console.WriteLine("[gp] combo: Start+Select+X => shutdown");
+        PlayBeep();
         Run("systemctl", "poweroff");
     }
     else if (pressed.Contains(3))
     {
         lastActionAt = DateTimeOffset.UtcNow;
         Console.WriteLine("[gp] combo: Start+Select+Y => stop kiosk (desktop)");
+        PlayBeep();
         Run("systemctl", $"stop {chromiumUnit}");
     }
 }
@@ -143,6 +147,33 @@ Console.CancelKeyPress += (_, e) =>
 
 stop.Wait();
 watcher.Dispose();
+
+static void PlayBeep()
+{
+    // Geef directe audio-feedback zodat de gebruiker weet dat de combo herkend is,
+    // ook als de actie zelf even op zich laat wachten (trage Pi).
+    Task.Run(() =>
+    {
+        try
+        {
+            using var p = Process.Start(new ProcessStartInfo
+            {
+                FileName = "speaker-test",
+                Arguments = "-t sine -f 880 -l 1 -q",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false
+            });
+            if (p != null)
+            {
+                Thread.Sleep(300);
+                try { p.Kill(); } catch { }
+                p.WaitForExit(500);
+            }
+        }
+        catch { }
+    });
+}
 
 static void SetKioskUrl(string url)
 {
